@@ -1,0 +1,2 @@
+
+sudo docker run --rm -it -v /home/yoonhyek/multimodal/text-image-embedding/train_ml_clip:/workspace -v /data-ainfs01/yoonhyek/multimodal:/models --gpus '"device=1,2,3,4,5,6,7"' -e NVIDIA_DRIVER_CAPABILITIES=compute,utility -e NVIDIA_VISIBLE_DEVICES=all --name multimodal_test multimodal:cuda11

@@ -1,0 +1,8 @@
+pytorch_lightning
+loguru
+typer
+datasets
+transformers
+pytorch_optimizer
+wandb==0.17.0
+# huggingface_hub[cli]

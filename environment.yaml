@@ -1,0 +1,35 @@
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+
+  - pytorch>=1.13
+  - pytorch-cuda=11.7
+  - torchvision
+  - pytorch-lightning
+  - transformers
+  - datasets>=2.0.0
+
+  - pandas
+  - polars
+
+  - rich
+  - typer
+  - wandb
+  - loguru
+  - zstandard
+
+  - black
+  - flake8
+  - flake8-bugbear
+  - isort
+  - mypy
+  - pre-commit
+
+  - pip:
+      - pytorch_optimizer
+      - bitsandbytes
