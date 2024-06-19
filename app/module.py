@@ -14,7 +14,7 @@ from transformers import (
     VisionTextDualEncoderProcessor,
 )
 
-from .util import create_optimizer
+from .util import create_optimizer, refresh_access_token, upload_folder_to_google_drive
 
 
 class KoCLIPModule(pl.LightningModule):
@@ -44,6 +44,9 @@ class KoCLIPModule(pl.LightningModule):
         self.optimizer = optimizer
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
+        self.refresh_token = ""
+        self.client_id = ""
+        self.client_secret = ""
 
     def init_model(self, teacher_model_name: str, student_model_name: str):
         teacher = CLIPModel.from_pretrained(
@@ -130,32 +133,36 @@ class KoCLIPModule(pl.LightningModule):
 
     def step(self, batch):
         ko_batch, en_ko_batch, en_en_batch = batch
-        logger.info(f"ko_batch shape: {ko_batch['input_ids'].size()}")
-        logger.info(f"en_ko_batch shape: {en_ko_batch['input_ids'].size()}")
-        logger.info(f"en_en_batch shape: {en_en_batch['input_ids'].size()}")
+        # logger.info(f"ko_batch shape: {ko_batch['input_ids'].size()}")
+        # logger.info(f"en_ko_batch shape: {en_ko_batch['input_ids'].size()}")
+        # logger.info(f"en_en_batch shape: {en_en_batch['input_ids'].size()}")
 
         if self.model_type == "clip":
             logger.info(f"**ko_batch: {ko_batch}")
-            ko_emb = self.student.text_model(**ko_batch).last_hidden_state
-            # ko_emb = self.student.text_model(**ko_batch)[1]
+            # ko_emb = self.student.text_model(**ko_batch).last_hidden_state
+            ko_emb = self.student.text_model(**ko_batch)[1]
             # logger.info(f"ko_emb: {ko_emb}")
-            en_ko_emb = self.student.text_model(**en_ko_batch).last_hidden_state
-            # en_ko_emb = self.student.text_model(**en_ko_batch)[1]
+            # en_ko_emb = self.student.text_model(**en_ko_batch).last_hidden_state
+            en_ko_emb = self.student.text_model(**en_ko_batch)[1]
             # logger.info(f"en_ko_emb: {en_ko_emb}")
-            en_en_emb = self.teacher.text_model(**en_en_batch).last_hidden_state
-            # en_en_emb = self.teacher.text_model(**en_en_batch)[1]
+            # en_en_emb = self.teacher.text_model(**en_en_batch).last_hidden_state
+            en_en_emb = self.teacher.text_model(**en_en_batch)[1]
             # logger.info(f"en_en_emb: {en_en_emb}")
         else:
             ko_emb = self.student.get_text_features(**ko_batch)
             en_ko_emb = self.student.get_text_features(**en_ko_batch)
             en_en_emb = self.teacher.get_text_features(**en_en_batch)
 
-        logger.info(f"ko_emb shape: {ko_emb.size()}")
-        logger.info(f"en_ko_emb shape: {en_ko_emb.size()}")
-        logger.info(f"en_en_emb shape: {en_en_emb.size()}")
+        # logger.info(f"ko_emb shape: {ko_emb.size()}")
+        # loggerl.info(f"en_ko_emb shape: {en_ko_emb.size()}")
+        # logger.info(f"en_en_emb shape: {en_en_emb.size()}")
 
-        ko_en_loss = self.mse(ko_emb, en_en_emb)
-        en_en_loss = self.mse(en_ko_emb, en_en_emb)
+        ko_en_loss = self.mse(
+            ko_emb, en_en_emb
+        )  # 한국어 텍스트에 대한 teacher model의 지식을 반영, student model이 한국어 텍스트에서 teacher model이 영어 텍스트에서 추출한 특성(특히 의미적 특징)을 잘 학습하고 있는지 평가
+        en_en_loss = self.mse(
+            en_ko_emb, en_en_emb
+        )  # 영어 텍스트에 대해 일관된 특성을 학습, student model이 영어 텍스트에서 teacher model이 영어 텍스트에서 추출한 특성을 잘 학습하고 있는지 평가
         loss = ko_en_loss + en_en_loss
 
         loss_dict = {
@@ -195,6 +202,7 @@ class KoCLIPModule(pl.LightningModule):
         return loss["loss"]
 
     def save(self, save_dir: str = "save/my_model"):
+
         self.student.save_pretrained(save_dir)
 
         tokenizer = AutoTokenizer.from_pretrained(
@@ -211,3 +219,10 @@ class KoCLIPModule(pl.LightningModule):
             )
             processor = VisionTextDualEncoderProcessor(feature_extractor, tokenizer)
         processor.save_pretrained(save_dir)
+
+        # refresh access token (Colab 사용시 활성화)
+        access_token = refresh_access_token(
+            self.client_id, self.client_secret, self.refresh_token
+        )
+        # Upload the saved directory to Google Drive
+        upload_folder_to_google_drive(access_token, folder_path=save_dir)

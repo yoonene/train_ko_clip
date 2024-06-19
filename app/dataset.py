@@ -61,9 +61,9 @@ class KoCLIPDataCollator:
         en_en_batch = self.en_tokenizer.pad(
             en_en_token, padding=True, return_tensors="pt"
         )
-        logger.info(f"ko_batch: {ko_batch['input_ids'].size()}")
-        logger.info(f"en_ko_batch: {en_ko_batch['input_ids'].size()}")
-        logger.info(f"en_en_batch: {en_en_batch['input_ids'].size()}")
+        # logger.info(f"ko_batch: {ko_batch['input_ids'].size()}")
+        # logger.info(f"en_ko_batch: {en_ko_batch['input_ids'].size()}")
+        # logger.info(f"en_en_batch: {en_en_batch['input_ids'].size()}")
 
         return ko_batch, en_ko_batch, en_en_batch
 
@@ -86,15 +86,19 @@ class KoCLIPDataModule(pl.LightningDataModule):
 
     def prepare_data(self):
         load_dataset(
-            "yoonene/AI_Hub_Ko-En_Parallel_Corpus",
-            split="train+valid",
+            # "yoonene/AI_Hub_Ko-En_Parallel_Corpus",
+            # split="train+valid",
+            "yoonene/AI_Hub_Ko-En_Corpus",
+            split="train+validation+test",
             use_auth_token=self.use_auth_token,
         )
 
     def setup(self, stage=None):
         ds: HFDataset = load_dataset(
-            "yoonene/AI_Hub_Ko-En_Parallel_Corpus",
-            split="train+valid",
+            # "yoonene/AI_Hub_Ko-En_Parallel_Corpus",
+            # split="train+valid",
+            "yoonene/AI_Hub_Ko-En_Corpus",
+            split="train+validation+test",
             use_auth_token=self.use_auth_token,
         )
         en_tokenizer = AutoTokenizer.from_pretrained(
@@ -120,8 +124,10 @@ class KoCLIPDataModule(pl.LightningDataModule):
 
 if __name__ == "__main__":
     ds = load_dataset(
-        "yoonene/AI_Hub_Ko-En_Parallel_Corpus",
-        split="train+valid",
+        # "yoonene/AI_Hub_Ko-En_Parallel_Corpus",
+        # split="train+valid",
+        "yoonene/AI_Hub_Ko-En_Corpus",
+        split="train+validation+test",
         use_auth_token=True,
     )
 

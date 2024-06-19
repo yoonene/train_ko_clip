@@ -69,7 +69,7 @@ def train(
         0, min=0, help="num workers of dataloader", rich_help_panel="train"
     ),
     accumulate_grad_batches: Optional[int] = Option(
-        None, min=1, help="accumulate grad batches", rich_help_panel="train"
+        1, min=1, help="accumulate grad batches", rich_help_panel="train"
     ),
     gradient_clip_val: Optional[float] = Option(
         None, min=0.0, help="gradient clip value", rich_help_panel="train"
@@ -94,6 +94,9 @@ def train(
         None,
         help="Path/URL of the checkpoint from which training is resumed",
         rich_help_panel="train",
+    ),
+    entity_name: Optional[str] = Option(
+        None, help="wandb entity name", rich_help_panel="train"
     ),
     wandb_name: Optional[str] = Option(
         None, help="wandb project name", rich_help_panel="train"
@@ -142,7 +145,7 @@ def train(
 
     logger.debug("set trainer")
     trainer = pl.Trainer(
-        logger=WandbLogger(name=wandb_name, project="koclip"),
+        logger=WandbLogger(entity=entity_name, name=wandb_name, project="koclip"),
         fast_dev_run=fast_dev_run,
         accelerator="auto",
         precision=16 if "bnb" not in optimizer else 32,
